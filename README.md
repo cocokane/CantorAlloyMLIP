@@ -1,29 +1,23 @@
-# CantorAlloyMLIP  
-*Training and Validation Guide for a Moment-Tensor Potential (MTP) of the Cantor (CoCrFeMnNi) High-Entropy Alloy*
+# Moment-Tensor Potential (MTP) Training and Validation Guide for modelling the Cantor (CoCrFeMnNi) High-Entropy Alloy
 
 ## Purpose
 
-This document serves as our code repository and workflow guide for the MTP developed for the equiatomic CoCrFeMnNi alloy, as part of the paper "Machine Learning Interatomic Potentials for High Entropy Alloys" by Sahoo et al. It is written to (i) enable full reproduction of our workflow and (ii) act as a reference for training **your own** MLIP with active learning. Each step specifies what it accomplishes, why it is required, and the principal caveats that affect scientific outcomes.
+This document serves as our code repository and workflow guide for the MTP developed for the equiatomic CoCrFeMnNi alloy, as part of the paper "Machine Learning Interatomic Potentials for High Entropy Alloys" by Sahoo et al. It is written to (i) enable full reproduction of our workflow and (ii) act as a reference for training **your own** MLIP with active learning. Each step specifies what it accomplishes, why it is required, and any caveats that affect outcomes.
 
 ![alt text](9c930b08039da8e20a98f011e6e846ef09fbabd6.png)
 
 ---
 
-## Prerequisites
+## Prerequisites (for replicating results)
 
 - **LAMMPS** built with the **MLIP/MTP** interface and **MEAM** (for baselines).  
-  *Use a consistent pair style name for your build (e.g., `pair_style mlip` vs `mlip/mlp`).*
 - **MLIP/MTP package** for training, minimum-distance calculation, and extrapolation grade (Γ) evaluation.
 - **Python 3.9+** with `numpy`, `pandas`, `matplotlib`, `seaborn` (post-processing and plotting).
-- (**Optional / for DFT labels**) **VASP (PBE/PAW)**. *POTCARs are not distributed and must be generated under your license.*
+- **VASP (PBE/PAW)** for generating DFT data to train the MLIP.
 
 ---
 
-## Getting Started: High-Quality Training Steps
-
-> **Orientation.** The workflow is split into: data → seed model → active learning → validation.
-
----
+## Workflow Overview
 
 ### Step 1 — Dataset design and generation (DFT/AIMD)
 
@@ -33,35 +27,22 @@ This document serves as our code repository and workflow guide for the MTP devel
 - **Element order.** Adopt a **canonical ordering** `Co–Cr–Fe–Mn–Ni` across POSCAR/conf/CFG. Reorder inputs if necessary before training or inference.
 
 **Composition of the present dataset** (training/test splits by category):
+| Category       | Temperature | Training | Test | Total |
+|----------------|-------------|----------|------|-------|
+| Defect-free    | 300 K       | 36       | 6    | 42    |
+| Defect-free    | 600 K       | 36       | 6    | 42    |
+| Defect-free    | 900 K       | 36       | 6    | 42    |
+| Dislocation    | 300 K       | 36       | 6    | 42    |
+| Stacking Fault | 300 K       | 20       | 10   | 30    |
+| Vacancy        | 300 K       | 36       | 6    | 42    |
+| **Total**      | --          | **200**  | **40** | **240** |
 
-``` latex
-\begin{tabular}{|l|c|c|c|c|S[table-format=1.2]|}
-        \toprule
-        \hline
-        \textbf{Category} & \textbf{Temperature} & \textbf{Training} & \textbf{Test} & \textbf{Total} \\
-        \midrule
-        \hline
-        Defect-free   & 300\,K & 36 & 6  & 42 \\
-        Defect-free   & 600\,K & 36 & 6  & 42 \\
-        Defect-free   & 900\,K & 36 & 6  & 42 \\
-        \midrule
-        Dislocation     & 300\,K & 36 & 6  & 42 \\
-        Stacking Fault  & 300\,K & 20 & 10 & 30 \\
-        Vacancy         & 300\,K & 36 & 6  & 42 \\
-        \midrule
-        \hline
-        \textbf{Total}  & --     & 200 & 40 & 240 \\
-        \bottomrule
-        \hline
-```
-- **Rationale.** The temperature ladder (300/600/900 K) and defect coverage (dislocation, stacking fault, vacancy) encourage **transferability**; splits are held fixed for objective validation.
-#### Minimum-distance sanity check (run before training and after any dataset change)
-
+#### Post Dataset generation sanity check: Minimum-distance test (run before training and after any dataset change)
+**Relevant files:** `MTP_training/step1_mindist_calc/`
 - **Goal.** Detect unphysical interatomic overlaps anywhere in the training/validation sets that cause divergent forces or unstable training/MD.  
 - **Method.** Use the MLIP package’s *mindist* mode to scan the `.cfg` files and report the global minimum interatomic distance.  
 - **Interpretation.** Values far below typical metallic nearest-neighbour distances indicate malformed structures; curate or regenerate those frames.  
 - **Caveat.** Perform this check again after every active-learning augmentation.
-
 
 ---
 
