@@ -1,6 +1,6 @@
 # CantorAlloyMLIP  
 *Training and Validation Guide for a Moment-Tensor Potential (MTP) of the Cantor (CoCrFeMnNi) High-Entropy Alloy*
-
+![alt text](9c930b08039da8e20a98f011e6e846ef09fbabd6.png)
 ---
 
 ## Purpose
