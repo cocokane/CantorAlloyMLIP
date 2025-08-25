@@ -1,0 +1,122 @@
+# This program is for performing nano indentation of 3d-crystal lattice of glassy Cu33Zr67
+
+#-------------------------------------------Initialize Simulation--------------------------------------
+clear
+echo		both
+units 		metal
+dimension	3
+boundary 	p p s
+atom_style	atomic
+
+#--------------------------------------------------Define Variables--------------------------------------------------
+
+#variable latparam  equal 3.593                # Laatice cosntant for CoNiCrFeMn HEA taken from https://doi.org/10.1063/5.0057591
+variable tempstart equal 300			            #Initial temperature in kelvin
+variable tempstop  equal 300			            #Final temperature in kelvin
+variable time_step equal 0.001	          #Time step in pico seconds (DO NOT CHANGE THIS VALUE)
+#variable tdamp     equal "v_time_step*100" 		#DO NOT CHANGE
+#variable pdamp     equal "v_time_step*1000"	  #DO NOT CHANGE
+variable myseed    equal 482748              #The create style generates an ensemble of velocities using a random number generator with the specified seed at the specified temperature.
+variable maxload index 200000
+variable run_time  equal $(2*v_maxload)           #Time steps for the equilibration part; time_eq=equilibration time (300ps)/time_step (0.001ps)
+
+
+
+#-------------------------------------------read_data command will read the data from the previously simulated glassy strucutre of the Cu33Zr67---------------
+
+
+read_data NPT_NVT_2ns_df.data
+
+
+#-------------------------------------------Setting timestep for the calculations-----------------------------------
+
+timestep ${time_step}           #DO NOT CHANGE
+
+#-------------------------------------------Define MEAM Potential--------------------------------------------
+ 
+pair_style 	meam
+pair_coeff 	* * library.meam Co Ni Cr Fe Mn CoNiCrFeMn.meam Co Ni Cr Fe Mn 
+
+
+neighbor        10.0  bin
+
+neigh_modify	every 1 delay 0 check yes
+
+#-------------------------------------------Energy Minimization-----------------------------------------
+
+minimize 1.0e-4 1.0e-5 10000 10000
+
+#-------------------------------------------Rigid boundary---------------------------------------
+region 1 block -30.1342153725732801 94.8082153725707 -30.1342153725732801 94.8082153725707 -10.1342153725732801 20.0 units box 
+
+group anvil1 region 1
+
+group mobile subtract all anvil1
+
+#-------------------------------------------Providing inital velocity----------------------------------------------
+
+compute new mobile temp
+
+velocity mobile create ${tempstart} ${myseed} temp new
+
+#velocity mobile create ${tempstart} ${myseed}
+
+fix 1 mobile nvt temp ${tempstart} ${tempstop} 0.05
+
+fix 2 anvil1 setforce 0.0 0.0 0.0
+
+#-------------------------------------------Assigning velocity to the indenter in z direction/loading direction
+
+variable z equal “98-0.1*((step<v_maxload)*step+(step>=v_maxload)*(2*v_maxload-step))*dt”
+
+#variable z equal "65-step*dt*0.1" # lz=98.7165077611, R = 30 angstrom, r = 0.7165077611 angstrom, 0.1 is 10 m/s velocity
+
+
+print "z is $z"
+
+#-------------------------------------------Indenter position and radius at onset of loading
+
+
+fix 4 mobile indent 16.0 sphere 32 32 v_z 30.0 units box # R = 30 angstrom, r = 5 angstrom
+
+
+#-------------------------------------------Use cfg for AtomEye. Dumping data using dump command------------------
+
+dump 		1 all cfg 5000 dump.comp_*.cfg mass type xs ys zs  fx fy fz
+
+
+dump_modify     1 element Fe Mn Co Cr Ni
+
+#-------------------------------------------Outout Paremeters--------------------------------------
+
+thermo 100
+
+
+#                    1    2    3   4       5     6
+thermo_style custom step temp v_z f_4[1] f_4[2] f_4[3]
+
+variable mz equal "v_z"
+variable px equal "f_4[1]"
+variable py equal "f_4[2]"
+variable pz equal "f_4[3]"
+
+
+#-------------------------------------------Writing data to the text file--------------------
+
+fix def1 all print 100 "${mz} ${px} ${py} ${pz}" file HEA_MG_indent_100.def1.txt screen no
+
+run ${run_time}
+
+
+print "Indentation Simulation ends here :)"
+
+
+
+
+
+
+
+
+
+
+

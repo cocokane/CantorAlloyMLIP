@@ -1,0 +1,4 @@
+folder contents:
+mtp8-rb10: trained potential on mtp of order 8, radial basis size 10.(Actual Trained potential used for validation)
+mtp8-rb8: partially trained potential of order 8, radial basis size 8. (Not stable for MD simulation)
+mtp16-rb8: partially trained potential of order 16, radial basis size 8. (Not stable for MD simulation)   

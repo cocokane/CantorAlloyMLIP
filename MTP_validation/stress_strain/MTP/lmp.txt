@@ -1,0 +1,123 @@
+# CoNiCrFeMn HEA using MEAM potential (Ref: Choi et al., https://doi.org/10.1038/s41524-017-0060-9)
+# Repository: https://www.ctcms.nist.gov/potentials/system/Cr/#Co-Cr-Fe-Mn-Ni 
+
+#-------------------------------------------Initialize Simulation--------------------------------------
+
+clear
+units 		  metal
+dimension 	3 
+boundary 	  p p p
+atom_style 	atomic
+
+#--------------------------------------------------Define Variables--------------------------------------------------
+
+variable latparam     equal 3.518
+lattice    fcc ${latparam}
+variable time_step    equal 0.001			#Time step in pico seconds (DO NOT CHANGE THIS VALUE)
+variable tdamp        equal "v_time_step*100" 	#DO NOT CHANGE
+variable pdamp        equal "v_time_step*1000"	#DO NOT CHANGE
+variable time_eq      equal 2000000			#Time steps for the iteration to complete
+variable Rtensile    equal  0.0001 			#ERATE here 0.0005, 0.002, 0.003 1/ps every picosecond
+variable tempstart   equal  300
+variable tempstop    equal  300
+variable myseed      equal  1234567
+
+#------------------------BOX PARAMETERS----------------------------------
+region               boxid block 0 18 0 18 0 18 units lattice
+create_box           5 boxid
+create_atoms         1 box
+
+
+set                  type 1 type/fraction 2 0.20 324261
+set                  type 1 type/fraction 3 0.25 84326
+set                  type 1 type/fraction 4 0.33 654320
+set                  type 1 type/fraction 5 0.50 121098
+
+#------------------This will read prveious perpendicular strucutre to generate 3% vacancy -------------------------------
+
+#read_data NPT_NVT_combine_8ns.data
+
+#-------------------------------------------------Define masses-----------------------------------------------------
+#mass		1 58.933194 	#Co		
+#mass		2 58.6934	    #Ni
+#mass		3 51.9961	    #Cr	
+
+mass		1 55.845	    #Fe
+mass		2 54.9380	    #Mn	
+mass            3 58.933194         #Co
+mass            4 51.9961           #Cr
+mass            5 58.6934           #Ni
+ 
+#-------------------------------------------------Define MTP Potential--------------------------------------------
+ 
+pair_style 	mlip mlip.ini 
+pair_coeff 	* * 
+
+#neighbor	2.0 bin
+#neigh_modify	every 1 delay 0 check yes
+
+# ------------------------- SETTINGS ---------------------------------
+compute csym all centro/atom fcc
+compute peratom all pe/atom 
+
+#---------------------------------Equilibration---------------------------------------
+
+reset_timestep	0
+timestep ${time_step} #DO NOT CHANGE
+
+velocity all create ${tempstart} ${myseed} mom yes rot no
+
+fix      1 all npt temp ${tempstart} ${tempstop} ${tdamp} iso 1.013 1.013 ${pdamp} drag 1.0 
+
+# Set thermo output
+thermo 1000
+
+#                    1    2 3   4   5    6   7   8  9   10 
+thermo_style custom step lx ly lz press pxx pyy pzz pe temp
+
+# Run for at least 10 picosecond (assuming 1 fs timestep)
+
+run 	 2000000
+
+unfix 1
+
+# Store final cell length for strain calculations
+variable tmp equal "lx"
+variable L0 equal ${tmp}
+print "Initial Length, L0: ${L0}"
+
+#-----------------------------DEFORMATION-------------------------------------------
+reset_timestep	0
+
+fix		1 all npt temp ${tempstart} ${tempstop} ${tdamp} y 0 0 1 z 0 0 1 drag 1
+
+fix		2 all deform 1 x erate ${Rtensile} units box remap x
+
+
+
+# Output strain and stress info to file
+# for units metal, pressure is in [bars] = 100 [kPa] = 1/10000 [GPa]
+# p2, p3, p4 are in GPa
+
+variable strain equal "(lx - v_L0)/v_L0"
+variable p1 equal "v_strain"
+variable p2 equal "-pxx/10000"
+variable p3 equal "-pyy/10000"
+variable p4 equal "-pzz/10000"
+fix def1 all print 5000 "${p1} ${p2} ${p3} ${p4}" file HEA_stress_strain_1.000_300K_tensile.txt
+
+# Use cfg for AtomEye
+dump 		1 all custom 10000 HEA_dump_tensile_* id type xs ys zs c_csym c_peratom fx fy fz
+#dump_modify 1 element Fe Mn Co Cr Ni 
+
+# Display thermo
+thermo 	5000
+thermo_style	custom step v_strain temp v_p2 v_p3 v_p4 ke pe press
+
+#run		20000
+run 	 ${time_eq}
+
+write_data Uniaxial-defect-free.data
+#-------------------------------End of SIMULATION DONE message------------------------
+print "Simulation for tensile deformation Done!"
+

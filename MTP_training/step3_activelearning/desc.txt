@@ -1,0 +1,5 @@
+00: sample first folder for starting Active Learning
+	train/test.cfg: train and test directories copied from previous step to start active learning.
+mlip.ini: settings for performing active learning
+pot_new.mtp: start with initally trained potential from previous step
+activelearning*.sh: bash scripts for automating various steps of active learning

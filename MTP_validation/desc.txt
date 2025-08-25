@@ -1,0 +1,10 @@
+Folder Contents:
+Each folder contains input files for performing the validations of the trained MTP against MEAM & DFT.
+
+The plotting scripts for each can be found in the potting_scripts folder within utility_scripts in parent directory.
+
+All physical properties and scaling behaviour calculations are performed on 18x18x18 structures (23300 atoms) (compare MEAM, MTP)
+
+EV curve (equation of state) estimation is performed on 108 atom structure (compare DFT, MEAM & MTP)
+
+Energy, Stress, Force errors compared between trained MTP and DFT values on 108 atom structures.

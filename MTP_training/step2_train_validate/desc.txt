@@ -1,0 +1,3 @@
+init.mtp: inital potential to start training
+train*.sh: bash script for initial training and validation step
+train/test.cfg: dataset on which initial training is performed.

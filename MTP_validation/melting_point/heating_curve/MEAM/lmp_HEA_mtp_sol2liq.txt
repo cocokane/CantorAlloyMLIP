@@ -1,0 +1,132 @@
+# This script is for heating the face centered cubic (fcc) of CoNiCrFeMn high-entropy alloys: 3D block simulation
+
+#-------------------------------------------Initialize Simulation--------------------------------------
+
+clear
+units 		metal
+echo            both
+dimension 	3
+boundary 	p p p
+atom_style 	atomic
+
+#-------------------------------------Define variables-------------------------------------------------
+
+lattice  fcc 3.518
+#variable big_lattice equal 4.000                                #Optimized lattice paramter
+
+#lattice     fcc ${big_lattice}
+
+variable time_step    equal  0.001				#Time step in pico seconds (DO NOT CHANGE THIS VALUE)
+variable tempsol   equal  300				#Initial temperature in kelvin
+variable templiq    equal  2000				#Final temperature in kelvin
+variable tempcoex  equal 1200
+#variable myseed      equal  12345   				#The value seed for the velocity (DO NOT CHANGE THIS VALUE)
+variable tdamp        equal  "v_time_step*100" 			#DO NOT CHANGE
+variable pdamp        equal  "v_time_step*1000"			#DO NOT CHANGE
+variable time_eq      equal  1000 				#Equilibration time is 100 ps
+variable time_run     equal  "v_time_eq/v_time_step"	        #Time steps for the iteration to complete=100000=100ps/0.001ps
+
+variable x1 equal "step"
+variable x2 equal "vol"
+variable x3 equal "temp"
+
+#------------------------------------------Box Parameters----------------------------------------------
+
+region          boxid block 0 12 0 12 0 12 units lattice 
+create_box      5 boxid
+create_atoms    1 box
+
+
+# Total 5 elements, randomly replace fractions of atom type 1 (Fe) into other atom types (2=Mn, 3=Co, 4=Cr, and 5=Ni).
+# This is done sequentially such that the composition is equiatomic. 
+
+set 		type 1 type/fraction 2 0.17  324261 
+set 		type 1 type/fraction 3 0.22  84326 
+set 		type 1 type/fraction 4 0.45  654320 
+set 		type 1 type/fraction 5 0.50  121098 
+
+#------------------------------------------Define mass as per the sequence in the POTCAR file------------------------------------
+mass		1 55.845	    #Fe
+mass		2 54.9380	    #Mn	
+mass		3 58.933194 	    #Co		
+mass		4 51.9961	    #Cr	
+mass		5 58.6934	    #Ni
+
+
+#-----------------------------create upper and lower regions for coexistence simulations
+region lower block 0 12 0 12 0 6
+region upper block 0 12 0 12 6 12
+group lower region lower
+group upper region upper
+
+#-----------------------------Define Machine Learning Interatomic Potential (MLIP)---------------------
+
+pair_style  meam
+pair_coeff  * * library.meam Co Ni Cr Fe Mn CoNiCrFeMn.meam Co Ni Cr Fe Mn             
+
+neighbor    1.0 bin
+neigh_modify delay 0 every 1 check yes
+
+#--------------------------------------------Create regions-------------------------------------------
+
+velocity all create ${tempcoex} 12345 mom yes dist gaussian
+
+#---------------------------------------Energy Minimization energy  force------------------------------
+
+minimize        	 1.0e-12 1.0e-12 1000 1000
+
+
+write_data	minimized_structure.data
+
+#----------------------------------------Collecting Thermodynamic Data----------------------------------
+thermo           	1000
+thermo_style     	custom step temp vol press pe ke etotal enthalpy density
+log        	        log_HEA_MGs.data
+
+#---------------------------------------------Dumping Data----------------------------------------------
+
+dump 		        1 all custom 10000 HEA_sol_liq_dump_new_*.lammpstrj id type x y z 
+
+#----------------------------------Equilibation for 100 ps @ NVT ----------------------------------------
+
+velocity all create 300 12345 mom yes dist gaussian
+#fix		        equimelt all nvt temp ${tempcoex} ${tempcoex} ${tdamp}
+#run			${time_run}
+#unfix			equimelt
+
+
+#variable newlat equal ${size}*${latparam}/${big_lattice}
+#fix 			equiliq upper nvt temp ${tempcoex} ${templiq} ${tdamp}
+#run			${time_run}
+#unfix			equiliq
+
+
+#fix      		equiliq2 upper nvt temp ${templiq} ${tempcoex} ${tdamp} 
+#run ${time_run}
+#unfix                   equiliq2
+
+#fix                     equil all nve
+#fix                     equildata all print 1000 "${x1} ${x2} ${x3}" file coexistence_NVE_2ns.dat screen no
+#run                     2000000
+#unfix                   equil
+#unfix                   equildata
+
+#fix                     1 all press/berendsen iso 1.0 1.0 ${pdamp}
+fix                     1 all npt temp 300 2000 ${tdamp} iso 1.0 1.0 ${pdamp}
+run                     3000000
+unfix                   1
+#unfix                   2
+
+fix                     2 all npt temp 2000 300 ${tdamp} iso 1.0 1.0 ${pdamp}
+run                     3000000
+unfix                   2
+#---------------------------------------------Writing Data for Further Use---------------------------------
+
+write_data	HEA_fcc_sol_liq.data
+
+write_dump all custom my.dump id type x y z 
+
+#write_data end.inp 
+
+#-------------------------------------------End of SIMULATION DONE message---------------------------------
+print "Simulation for solid to liquid phase transition for HEA is done!!"

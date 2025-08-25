@@ -1,0 +1,6 @@
+EV_curve.py = for plotting Energy vs Volume curves(equation of state for MTP, MEAM, DFT).
+melting_point.py = for plotting heating curves(MTP, MEAM).
+nanoindentation.py = for plotting nanoindentation(P vs h) curves for structure using MEAM, MTP.
+stress_strain.py = for plotting uniaxial tensile stress vs strain curve for structure using MEAM, MTP.
+strong_scaling.py = for plotting strong scaling behaviour of MTP and MEAM.
+weak_scaling.py = for plotting weak scaling behaviour of MTP and MEAM.

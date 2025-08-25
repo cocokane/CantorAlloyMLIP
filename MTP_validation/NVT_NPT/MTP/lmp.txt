@@ -1,0 +1,118 @@
+# CoNiCrFeMn HEA using MEAM potential (Ref: Choi et al., https://doi.org/10.1038/s41524-017-0060-9)
+# Repository: https://www.ctcms.nist.gov/potentials/system/Cr/#Co-Cr-Fe-Mn-Ni 
+
+#-------------------------------------------Initialize Simulation--------------------------------------
+
+clear
+units 		  metal
+dimension 	3 
+boundary 	  p p p
+atom_style 	atomic
+
+#--------------------------------------------------Define Variables--------------------------------------------------
+
+variable latparam  equal 3.518                # Laatice cosntant for CoNiCrFeMn HEA taken from https://doi.org/10.1063/5.0057591
+variable tempstart equal 300			            #Initial temperature in kelvin
+variable tempstop  equal 300			            #Final temperature in kelvin
+variable time_step equal 0.001			          #Time step in pico seconds (DO NOT CHANGE THIS VALUE)
+variable tdamp     equal "v_time_step*100" 		#DO NOT CHANGE
+variable pdamp     equal "v_time_step*1000"	  #DO NOT CHANGE
+variable myseed    equal 1234567              #The create style generates an ensemble of velocities using a random number generator with the specified seed at the specified temperature.
+variable run_time  equal 1000000              #Time steps for the equilibration part; time_eq=equilibration time (4ns)/time_step (0.001ps)
+
+
+#---------------------read_data command will read the data from the original dipole sttrucutre created using atomsk---------------
+
+#read_data  NPT_NVT_4ns_dipole.data
+
+#--------------------------------------------------Box Parameters----------------------------------------------------
+
+lattice       fcc ${latparam}
+region 		    box block 0 18 0 18 0 18  #bounds of block in all dimensions (distance units)
+create_box 	  5   box                   # Allow for 5 atom types to be defined. 
+create_atoms 	1   region box            # First assign all lattice points as atom type 1 (Co)
+
+#------Total 5 elements, randomly replace fractions of atom type 1 (Co) into other atom types (2=Ni, 3=Cr, 4=Fe, and 5=Mn)---------
+#------This is done sequentially such that the composition is equiatomic---------------------------------------------
+
+set 		type 1 type/fraction 2 0.20  324261 
+set 		type 1 type/fraction 3 0.25  84326 
+set 		type 1 type/fraction 4 0.32  654320 
+set 		type 1 type/fraction 5 0.50  121098 
+
+#-------------------------------------------------Define masses-----------------------------------------------------
+mass		1 58.933194 	#Co		
+mass		2 58.6934	    #Ni
+mass		3 51.9961	    #Cr	
+mass		4 55.845	    #Fe
+mass		5 54.9380	    #Mn	
+ 
+#-------------------------------------------------Define MEAM Potential--------------------------------------------
+ 
+pair_style 	mlip mlip.ini 
+pair_coeff 	* *
+
+neighbor	2.0 bin
+neigh_modify	every 10 delay 0 check no
+
+#-----------------------------------------------------Create Regions----------------------------------------------
+
+velocity all create ${tempstart} ${myseed}
+
+#----------------------------------------------------Energy Minimization-----------------------------------------
+
+fix 	1 all box/relax iso 1.013 
+
+thermo           	1
+#                         1    2     3   4   5   6     7    8
+thermo_style     	custom step temp press pe ke etotal vol density
+
+minimize        	1.0e-12 1.0e-12 10000 10000
+log        		    log_HEA_energy_minimized.data
+
+unfix 	1
+
+write_data	minimized_structure_box_relax.data
+
+
+#-------------------------Setting timestep for the calculations-----------------------------------
+
+timestep ${time_step}           #DO NOT CHANGE
+
+#-----------------------------------------Outout Paremeters--------------------------------------
+
+#                      1    2     3  4   5   6     7    8
+thermo_style  custom step temp press pe ke etotal vol density
+
+#------------------Storing thermodynamic data after each 5000 step. It will generate 4000 points
+thermo  5000                       
+
+
+#------------Dumping output data after each 20000 steps. IT will gereate 100 files-----------------
+
+dump		1 all atom 10000 dump_NPT*.atom
+
+
+#-----------------------------------NPT Equilibation for 2 ns--------------------------------------
+ 
+fix		 2 all npt temp ${tempstart} ${tempstop} ${tdamp} iso 1.013 1.013 ${pdamp}
+run		 ${run_time}                        
+unfix	 2
+
+
+#-----------------------------------NVT Equilibation for 2 ns--------------------------------------
+
+#fix		 3 all nvt temp ${tempstart} ${tempstop} ${tdamp}
+#run		 ${run_time}                                     
+#unfix  3
+
+
+
+write_data	eql_NPT_dipole_1ns.data
+
+
+
+
+
+
+

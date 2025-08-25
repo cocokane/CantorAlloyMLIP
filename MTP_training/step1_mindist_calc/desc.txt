@@ -1,0 +1,2 @@
+calc*.sh: bash script for calculating minimun distance between any pair of atoms across training set using MLIP package.
+train/test.cfg: dataset on which initial training is performed.

@@ -1,0 +1,7 @@
+chn_odr.sh = bash script template to change order of elements in the conf/POSCAR files for MLIP & MTP.
+extract_data_lammps_log.py = extract energy, stress, force values from lammps log files after using MTP or MEAM with LLAMMPS to calculate these quantities.
+extract_data_dft.py = extract energy, stress, force values from cfg files i.e. outputs for each structures after AI-MD.
+summ2cfg.py = convert vasp data OUTCAR files into cfg files to be used for MTP traning.(summ2cfg.py & extract_data_dft.py can be together used to 
+                                                                                        post process data from VASP OUTCAR files)
+
+

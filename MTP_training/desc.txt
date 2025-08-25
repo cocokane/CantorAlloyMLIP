@@ -1,0 +1,31 @@
+Folder Contents:
+bash scripts for automating the training workflow of MTP.
+
+Additional scripts for running each step of MTP Training:
+train.cfg(train configurations concatenated)
+test.cfg (test configurations concatenated)
+mlip.ini(describes the current mode in which the MLIP package should run(mindist calculation, training, active learning, etc))
+pot.mtp(actual mtp potential file whose parameters gets tuned during training)
+
+Step1(mindist calculation):
+script to calculate the minnimum distance between 2 atoms across all the structures in the dataset.
+
+Step2 (training):
+initial training of the the MTP.
+
+step3 (active learning) :
+step 1:
+training 
+error estimation
+simulate trained mtp on NPT trajectory
+when simulation breaks down add all generated structures whose extrapolation grade exceeds threshold to the train set
+retrain until potential is stable.
+
+step 2:
+training 
+error estimation
+simulate trained mtp on multiple trajectories at different temperatures, lattice constants, etc
+when simulation breaks down add all generated structures whose extrapolation grade exceeds threshold to the train set
+retrain until potential is stable.
+
+

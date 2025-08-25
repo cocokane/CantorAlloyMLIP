@@ -1,0 +1,14 @@
+Folder Contents:
+All folders contain VASP input files used for performing each step of structure optimisation.
+order of struture optimisation: ECUT optimisation --> K-points optimisation --> Lattice Constant optimisation
+
+ECUT optimisation:
+contains input VASP script for checking Energy predcited for system with different ECUT values.
+
+K-points optimisation:
+After choosing a suitable ECUT max with minimal deviations in energy of system with increasing ECUT we perform k-points optimisation for different 
+k-point grid density
+
+Lattice Constant optimisation:
+Finally with the optimal K-point density grid and ECUT we check the energy of striucture for various Lattice constants and choose the optimal lattice constant the one which gives minimum energy.
+
