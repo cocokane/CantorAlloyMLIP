@@ -1,11 +1,11 @@
 # CantorAlloyMLIP  
 *Training and Validation Guide for a Moment-Tensor Potential (MTP) of the Cantor (CoCrFeMnNi) High-Entropy Alloy*
-![alt text](9c930b08039da8e20a98f011e6e846ef09fbabd6.png)
----
 
 ## Purpose
 
-This document serves as the **official training guide** for the MTP developed for the equiatomic CoCrFeMnNi alloy. It is written to (i) enable full reproduction of our workflow and (ii) act as a reference for training **your own** MLIP with active learning. Each step specifies what it accomplishes, why it is required, and the principal caveats that affect scientific outcomes.
+This document serves as our code repository and workflow guide for the MTP developed for the equiatomic CoCrFeMnNi alloy, as part of the paper "Machine Learning Interatomic Potentials for High Entropy Alloys" by Sahoo et al. It is written to (i) enable full reproduction of our workflow and (ii) act as a reference for training **your own** MLIP with active learning. Each step specifies what it accomplishes, why it is required, and the principal caveats that affect scientific outcomes.
+
+![alt text](9c930b08039da8e20a98f011e6e846ef09fbabd6.png)
 
 ---
 
